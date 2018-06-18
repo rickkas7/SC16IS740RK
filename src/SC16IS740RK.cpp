@@ -103,12 +103,117 @@ size_t SC16IS740::write(uint8_t c) {
 	return 1;
 }
 
+size_t SC16IS740::write(const uint8_t *buffer, size_t size) {
+	size_t written = 0;
+	bool done = false;
+
+	while(size > 0 && !done) {
+		size_t count = size;
+		if (count > 31) {
+			count = 31;
+		}
+
+		if (writeBlocksWhenFull) {
+			while(true) {
+				int avail = availableForWrite();
+				if (count <= (size_t) avail) {
+					break;
+				}
+				delay(1);
+			}
+		}
+		else {
+			int avail = availableForWrite();
+			if (count > (size_t) avail) {
+				count = (size_t) avail;
+				done = true;
+			}
+		}
+
+		if (count == 0) {
+			break;
+		}
+
+		if (!writeInternal(buffer, count)) {
+			// Failed to write
+			break;
+		}
+		buffer += count;
+		size -= count;
+		written += count;
+	}
+
+	return written;
+}
+
+/**
+ * @brief Read a multiple bytes to the serial port.
+ *
+ * @param buffer The buffer to read data into. It will not be null terminated.
+ *
+ * @param size The maximum number of bytes to read (buffer size)
+ *
+ * @return The number of bytes actually read or -1 if there are no bytes available to read.
+ *
+ * This is faster than reading a single byte at time because up to 32 bytes of data can
+ * be sent or received in an I2C transaction, greatly reducing overhead.
+ */
+int SC16IS740::read(uint8_t *buffer, size_t size) {
+	int avail = available();
+	if (avail < 0) {
+		// No data to read
+		return -1;
+	}
+	if (size > (size_t) avail) {
+		size = (size_t) avail;
+	}
+
+	readInternal(buffer, size);
+
+	return (int) size;
+}
+
+bool SC16IS740::readInternal(uint8_t *buffer, size_t size) {
+	wire.beginTransmission(addr);
+	wire.write(RHR_THR_REG << 3);
+	wire.endTransmission(false);
+
+	wire.requestFrom(addr, size, true);
+	for(size_t ii = 0; ii < size; ii++) {
+		buffer[ii] = (uint8_t) wire.read();
+	}
+
+	log.trace("readInternal %d bytes", size);
+
+	return true;
+}
+
+bool SC16IS740::writeInternal(const uint8_t *buffer, size_t size) {
+	wire.beginTransmission(addr);
+	wire.write(RHR_THR_REG << 3);
+	wire.write(buffer, size);
+
+	int stat = wire.endTransmission(true);
+
+	// stat:
+	// 0: success
+	// 1: busy timeout upon entering endTransmission()
+	// 2: START bit generation timeout
+	// 3: end of address transmission timeout
+	// 4: data byte transfer timeout
+	// 5: data byte transfer succeeded, busy timeout immediately after
+
+	log.trace("writeInternal size=%d stat=%d", size, stat);
+
+	return (stat == 0);
+}
+
 
 // Note: reg is the register 0 - 15, not the shifted value with the channel select bits. Channel is always 0
 // on the SC16IS740.
 uint8_t SC16IS740::readRegister(uint8_t reg) {
 	wire.beginTransmission(addr);
-	wire.write(reg << 3);
+	wire.write(RHR_THR_REG << 3);
 	wire.endTransmission(false);
 
 	wire.requestFrom(addr, 1, true);

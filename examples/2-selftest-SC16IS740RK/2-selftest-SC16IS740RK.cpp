@@ -2,7 +2,7 @@
 
 // Pick a debug level from one of these two:
 // SerialLogHandler logHandler;
-SerialLogHandler logHandler; //(LOG_LEVEL_TRACE);
+SerialLogHandler logHandler(LOG_LEVEL_TRACE);
 
 SYSTEM_THREAD(ENABLED);
 
@@ -58,11 +58,21 @@ void loop() {
 }
 
 bool clearAvailable() {
+	unsigned long start = millis();
+
 	while(Serial1.available()) {
 		Serial1.read();
+		if (millis() - start > 5000) {
+			Log.info("clearAvailable Serial1 did not clear in 5 seconds");
+			false;
+		}
 	}
 	while(extSerial.available()) {
 		extSerial.read();
+		if (millis() - start > 5000) {
+			Log.info("extSerial did not clear in 5 seconds");
+			false;
+		}
 	}
 	return true;
 }
@@ -82,6 +92,8 @@ bool testSimpleReadWrite() {
 	clearAvailable();
 
 	for(int ch = 0; ch < 256; ch++) {
+		Log.info("testSimpleReadWrite ch=%d", ch);
+
 		extSerial.write(ch);
 		bResult = waitForStream(Serial1);
 		if (!bResult) {
@@ -163,6 +175,61 @@ bool testFifo1() {
 }
 
 
+bool testFifoBlock1() {
+	bool bResult;
+
+	clearAvailable();
+
+
+	size_t numToTest = 62;
+
+	srand(0);
+
+	// Random test data
+	for(size_t ii = 0; ii < numToTest; ii++) {
+		tempBuf[ii] = rand();
+	}
+
+	uint8_t *buf2 = &tempBuf[256];
+
+	extSerial.write(tempBuf, numToTest);
+
+	for(int ch = 0; ch < (int) numToTest; ch++) {
+		bResult = waitForStream(Serial1);
+		if (!bResult) {
+			Log.error("failed line=%d ch=%d", __LINE__, ch);
+			return false;
+		}
+		int value = Serial1.read();
+		if (value != ch) {
+			Log.error("failed line=%d ch=%d value=%d", __LINE__, ch, value);
+			return false;
+		}
+	}
+
+	for(int ch = 0; ch < (int) numToTest; ch++) {
+		Serial1.write(ch);
+	}
+
+	for(int ch = 0; ch < (int) numToTest; ) {
+		int count = extSerial.read(buf2, 64);
+		if (count > 0) {
+			for(size_t jj = 0; jj < count; jj++) {
+				if (buf2[jj] != tempBuf[ch + jj]) {
+					Log.error("failed line=%d ch=%d jj=%u value=%d", __LINE__, ch, jj, buf2[jj]);
+					return false;
+
+				}
+			}
+			ch += count;
+		}
+	}
+
+	// Success is logged by the caller
+
+	return true;
+
+}
 bool testLarge1() {
 	srand(0);
 
@@ -197,8 +264,46 @@ bool testLarge1() {
 }
 
 
+bool testBlockRead() {
+	srand(0);
+
+	// Random test data
+	for(size_t ii = 0; ii < sizeof(tempBuf); ii++) {
+		tempBuf[ii] = rand();
+	}
+
+	clearAvailable();
+
+	int readIndex = 0;
+
+	for(size_t ii = 0; ii < sizeof(tempBuf); ) {
+		if (Serial1.availableForWrite()) {
+			Serial1.write(tempBuf[ii]);
+			ii++;
+		}
+
+		uint8_t buf[64];
+		int count = extSerial.read(buf, sizeof(buf));
+		if (count > 0) {
+			for(int jj = 0; jj < count; jj++) {
+				if (buf[jj] != tempBuf[readIndex]) {
+					Log.error("testBlockRead line=%d ii=%u got=%02x expected=%02x", __LINE__, ii, buf[jj], tempBuf[readIndex]);
+					return false;
+				}
+				readIndex++;
+			}
+		}
+	}
+
+	//Log.info("testBlockRead passed line=%d", __LINE__);
+
+	return true;
+}
+
 
 void runSelfTest() {
+
+	Log.info("runSelfTest");
 
 	testSimpleReadWrite();
 
@@ -209,9 +314,9 @@ void runSelfTest() {
 
 	testLarge1();
 
-	for(int ii = 0; ii < sizeof(bauds)/sizeof(bauds[0]); ii++) {
+	for(size_t ii = 0; ii < sizeof(bauds)/sizeof(bauds[0]); ii++) {
 
-		for(int jj = 0; jj < sizeof(options)/sizeof(options[0]); jj++) {
+		for(size_t jj = 0; jj < sizeof(options)/sizeof(options[0]); jj++) {
 
 			Serial1.begin(bauds[ii], options[jj].serial);
 			extSerial.begin(bauds[ii], options[jj].extSerial);
@@ -224,6 +329,22 @@ void runSelfTest() {
 			}
 			else {
 				Log.error("testFifo failed line=%d for baud=%d options index=%d", __LINE__, bauds[ii], jj);
+			}
+
+			bResult = testFifoBlock1();
+			if (bResult) {
+				Log.info("testFifoBlock1 passed for baud=%d options index=%d", bauds[ii], jj);
+			}
+			else {
+				Log.error("testFifoBlock1 failed line=%d for baud=%d options index=%d", __LINE__, bauds[ii], jj);
+			}
+
+			bResult = testBlockRead();
+			if (bResult) {
+				Log.info("testBlockRead passed for baud=%d options index=%d", bauds[ii], jj);
+			}
+			else {
+				Log.error("testBlockRead failed line=%d for baud=%d options index=%d", __LINE__, bauds[ii], jj);
 			}
 		}
 	}

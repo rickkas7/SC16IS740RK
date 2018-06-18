@@ -102,13 +102,42 @@ public:
     virtual void flush();
 
 	/**
-	 * @brief Write a single byte to the seria; port.
+	 * @brief Write a single byte to the serial port.
 	 *
 	 * @param c The byte to write. Can write binary or text data.
 	 *
 	 * This is a standard Arduino/Wiring method for Stream objects.
 	 */
     virtual size_t write(uint8_t c);
+
+	/**
+	 * @brief Write a multiple bytes to the serial port.
+	 *
+	 * @param buffer The buffer to write. Can write binary or text data.
+	 *
+	 * @param size The number of bytes to write
+	 *
+	 * @return The number of bytes written.
+	 *
+	 * This is faster than writing a single byte at time because up to 32 bytes of data can
+	 * be sent or received in an I2C transaction, greatly reducing overhead.
+	 */
+	virtual size_t write(const uint8_t *buffer, size_t size);
+
+	/**
+	 * @brief Read a multiple bytes to the serial port.
+	 *
+	 * @param buffer The buffer to read data into. It will not be null terminated.
+	 *
+	 * @param size The maximum number of bytes to read (buffer size)
+	 *
+	 * @return The number of bytes actually read or -1 if there are no bytes available to read.
+	 *
+	 * This is faster than reading a single byte at time because up to 32 bytes of data can
+	 * be sent or received in an I2C transaction, greatly reducing overhead.
+	 */
+	virtual int read(uint8_t *buffer, size_t size);
+
 
     /**
      * @brief Read a register
@@ -174,6 +203,23 @@ public:
 
 
 protected:
+	/**
+	 * @brief Internal function to read data
+	 *
+	 * It can only read 32 bytes at a time, the maximum that will fit in a 32 byte I2C transaction with
+	 * the register address in the first byte.
+	 */
+	virtual bool readInternal(uint8_t *buffer, size_t size);
+
+	/**
+	 * @brief Internal function to write data
+	 *
+	 * It can only write 31 bytes at a time, the maximum that will fit in a 32 byte I2C transaction with
+	 * the register address in the first byte.
+	 */
+	virtual bool writeInternal(const uint8_t *buffer, size_t size);
+
+
 	TwoWire &wire;
 	int addr; // This is the actual I2C address
 	int intPin; // Pin used for interrupts or -1

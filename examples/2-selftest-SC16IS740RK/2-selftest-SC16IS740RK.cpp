@@ -42,6 +42,13 @@ void setup() {
 
 	Serial1.begin(9600);
 
+	// Optional: The default Wire (I2C) speed is 100 KHz, but the SC16IS740 can operate at high speed,
+	// 400 KHz, which is recommended if you need higher baud rates. All of the devices on the I2C bus
+	// must support the higher speed, however.
+	// I get some failures at low baud rates (under 9600) when using high speed I2C for reasons I don't
+	// understand, so it's best to not enable this unless you need it.
+	// Wire.setSpeed(CLOCK_SPEED_400KHZ);
+
 	extSerial.begin(9600);
 }
 

@@ -15,6 +15,14 @@ You can connect up to 4 separate SC16IS740 chips to the single I2C interface on 
 
 When using a 1.8432 MHz oscillator it supports baud rate from 50 to 115200.
 
+Note that the default I2C speed is 100 KHz, so it will be impossible to read or write continuously at 115200, but bursts that fit within the size of the FIFO (64 bytes) are fine.
+
+Also, you can increase the speed of the I2C bus if all of the I2C devices support high speed mode by adding:
+
+```
+Wire.setSpeed(CLOCK_SPEED_400KHZ);
+```
+
 ## Using the library
 
 Include the SC16IS740RK library in your project and use it as follows:

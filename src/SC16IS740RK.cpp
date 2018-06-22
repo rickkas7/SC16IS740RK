@@ -170,7 +170,9 @@ int SC16IS740::read(uint8_t *buffer, size_t size) {
 	if (size > 32) {
 		size = 32;
 	}
-	readInternal(buffer, size);
+	if (!readInternal(buffer, size)) {
+		return -1;
+	}
 
 	return (int) size;
 }

@@ -160,14 +160,16 @@ size_t SC16IS740::write(const uint8_t *buffer, size_t size) {
  */
 int SC16IS740::read(uint8_t *buffer, size_t size) {
 	int avail = available();
-	if (avail < 0) {
+	if (avail == 0) {
 		// No data to read
 		return -1;
 	}
 	if (size > (size_t) avail) {
 		size = (size_t) avail;
 	}
-
+	if (size > 32) {
+		size = 32;
+	}
 	readInternal(buffer, size);
 
 	return (int) size;
@@ -178,7 +180,12 @@ bool SC16IS740::readInternal(uint8_t *buffer, size_t size) {
 	wire.write(RHR_THR_REG << 3);
 	wire.endTransmission(false);
 
-	wire.requestFrom(addr, size, true);
+	uint8_t numRcvd = wire.requestFrom(addr, size, true);
+	if (numRcvd < size) {
+		log.info("readInternal failed numRcvd=%u size=%u", numRcvd, size);
+		return false;
+	}
+
 	for(size_t ii = 0; ii < size; ii++) {
 		buffer[ii] = (uint8_t) wire.read();
 	}
@@ -208,12 +215,11 @@ bool SC16IS740::writeInternal(const uint8_t *buffer, size_t size) {
 	return (stat == 0);
 }
 
-
 // Note: reg is the register 0 - 15, not the shifted value with the channel select bits. Channel is always 0
 // on the SC16IS740.
 uint8_t SC16IS740::readRegister(uint8_t reg) {
 	wire.beginTransmission(addr);
-	wire.write(RHR_THR_REG << 3);
+	wire.write(reg << 3);
 	wire.endTransmission(false);
 
 	wire.requestFrom(addr, 1, true);

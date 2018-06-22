@@ -2,11 +2,13 @@
 
 // Pick a debug level from one of these two:
 // SerialLogHandler logHandler;
-SerialLogHandler logHandler(LOG_LEVEL_TRACE);
+SerialLogHandler logHandler; // (LOG_LEVEL_TRACE);
 
 SYSTEM_THREAD(ENABLED);
 
 SC16IS740 extSerial(Wire, 0, D2);
+
+const int SERIAL_RESET_PIN = D3; // -1 to disable
 
 // Connect the Photon TX pin to the SC16IS740 RX pin
 // Connect the Photon RX pin to the SC16IS740 TX pin
@@ -38,6 +40,11 @@ void runSelfTest();
 void setup() {
 	Serial.begin(9600);
 
+	if (SERIAL_RESET_PIN != -1) {
+		pinMode(SERIAL_RESET_PIN, OUTPUT);
+		digitalWrite(SERIAL_RESET_PIN, HIGH);
+	}
+
 	delay(5000);
 
 	Serial1.begin(9600);
@@ -62,16 +69,18 @@ bool clearAvailable() {
 
 	while(Serial1.available()) {
 		Serial1.read();
-		if (millis() - start > 5000) {
-			Log.info("clearAvailable Serial1 did not clear in 5 seconds");
-			false;
+		if (millis() - start > 10000) {
+			Log.info("clearAvailable Serial1 did not clear in 10 seconds");
+			return false;
 		}
 	}
+
+	start = millis();
 	while(extSerial.available()) {
 		extSerial.read();
-		if (millis() - start > 5000) {
-			Log.info("extSerial did not clear in 5 seconds");
-			false;
+		if (millis() - start > 10000) {
+			Log.info("extSerial did not clear in 10 seconds");
+			return false;
 		}
 	}
 	return true;
@@ -92,8 +101,6 @@ bool testSimpleReadWrite() {
 	clearAvailable();
 
 	for(int ch = 0; ch < 256; ch++) {
-		Log.info("testSimpleReadWrite ch=%d", ch);
-
 		extSerial.write(ch);
 		bResult = waitForStream(Serial1);
 		if (!bResult) {
@@ -163,7 +170,7 @@ bool testFifo1() {
 		}
 		int value = extSerial.read();
 		if (value != ch) {
-			Log.error("failed line=%d ch=%d value=%d", __LINE__, ch, value);
+			Log.error("failed line=%d ch=%d value=%d expected=%d", __LINE__, ch, value, ch);
 			return false;
 		}
 	}
@@ -181,7 +188,7 @@ bool testFifoBlock1() {
 	clearAvailable();
 
 
-	size_t numToTest = 62;
+	size_t numToTest = 60;
 
 	srand(0);
 
@@ -201,14 +208,14 @@ bool testFifoBlock1() {
 			return false;
 		}
 		int value = Serial1.read();
-		if (value != ch) {
-			Log.error("failed line=%d ch=%d value=%d", __LINE__, ch, value);
+		if (value != tempBuf[ch]) {
+			Log.error("failed line=%d ch=%d value=%02x expected=%02x", __LINE__, ch, value, tempBuf[ch]);
 			return false;
 		}
 	}
 
 	for(int ch = 0; ch < (int) numToTest; ch++) {
-		Serial1.write(ch);
+		Serial1.write(tempBuf[ch]);
 	}
 
 	for(int ch = 0; ch < (int) numToTest; ) {
@@ -287,7 +294,7 @@ bool testBlockRead() {
 		if (count > 0) {
 			for(int jj = 0; jj < count; jj++) {
 				if (buf[jj] != tempBuf[readIndex]) {
-					Log.error("testBlockRead line=%d ii=%u got=%02x expected=%02x", __LINE__, ii, buf[jj], tempBuf[readIndex]);
+					Log.error("testBlockRead line=%d ii=%u jj=%u got=%02x expected=%02x", __LINE__, ii, jj, buf[jj], tempBuf[readIndex]);
 					return false;
 				}
 				readIndex++;
@@ -304,6 +311,14 @@ bool testBlockRead() {
 void runSelfTest() {
 
 	Log.info("runSelfTest");
+
+	// Hardware reset if the pin has been assigned.
+	if (SERIAL_RESET_PIN >= 0) {
+		digitalWrite(SERIAL_RESET_PIN, LOW);
+		delay(1);
+		digitalWrite(SERIAL_RESET_PIN, HIGH);
+		delay(100);
+	}
 
 	testSimpleReadWrite();
 

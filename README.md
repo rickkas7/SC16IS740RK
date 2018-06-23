@@ -7,11 +7,13 @@
 
 Sometimes you need more serial ports (UARTs) than are provided on the Particle Photon and Electron. One handy technique is to use an external I2C/SPI UART, such as the NXP SC16IS740.
 
-This is just the first iteration of this project and only supports I2C and does not support hardware or software flow control. Other features will be added later.
+This version supports I2C and SPI, but does not support hardware or software flow control or interrupts. Other features will be added later.
 
 One difficulty is that the chip is only available in surface mount packages such as the TSSOP16. You'll need to use a [TSSOP-16 breakout board](https://www.adafruit.com/product/1207), make your own board (as described below) or put it directly on your own circuit board. As the pins are very small you may find it difficult to hand solder; it really should be mounted using a reflow oven.
 
-You can connect up to 4 separate SC16IS740 chips to the single I2C interface on D0 and D1.
+You can connect up to 4 separate SC16IS740 chips to the single I2C interface on D0 and D1 by I2C.
+
+The number of separate chips for SPI is limited to the number of available GPIO pins, as each one must have a unique CS pin, but they can share a single SPI bus.
 
 When using a 1.8432 MHz oscillator it supports baud rate from 50 to 115200.
 
@@ -158,3 +160,37 @@ I've included the Eagle CAD files for the breakout board I used above.
 ![board2](images/board2.jpg)
 
 The holes marked A0 and A1 are designed for standard breakaway 0.1" header pins. The addresses have pull-downs on them so the default is 0, but if you install the header pins and a jumper, they'll be pulled high so you can set address 0 - 3.
+
+## SPI Mode
+
+In most cases, you'll save GPIO pins by using I2C. However, if you need the fastest speed possible, such as if you want multiple 115200 data streams, or if you want to do 230400 baud, you'll want to use SPI.
+
+For the primary SPI (SPI):
+
+| Name | Flash Alt Name | Particle Pin | Example Color |
+| ---- | -------------- | ------------ | ------------- |
+| SS   | CS             | A2           | White         |
+| SCK  | CLK            | A3           | Orange        |
+| MISO | DO             | A4           | Blue          |
+| MOSI | DI             | A5           | Green         |
+
+Instead of instantiating a SC16IS740 object, use the SC16IS740SPI object:
+
+```
+SC16IS740SPI extSerial(SPI, A2);
+```
+
+For the secondary SPI (SPI1):
+
+| Name | Flash Alt Name | Particle Pin | Example Color |
+| ---- | -------------- | ------------ | ------------- |
+| SS   | CS             | D5           | White         |
+| SCK  | CLK            | D4           | Orange        |
+| MISO | DO             | D3           | Blue          |
+| MOSI | DI             | D2           | Green         |
+
+Instead of instantiating a SC16IS740 object, use the SC16IS740SPI object:
+
+```
+SC16IS740SPI extSerial(SPI1, D5);
+```

@@ -7,27 +7,17 @@
  * @brief Library for using the SC16IS740 UART on the Particle platform
  *
  */
-class SC16IS740 : public Stream {
+class SC16IS740Base : public Stream {
 public:
-	/**
-	 * @brief Construct the UART object. Typically done as a global variable.
-	 *
-	 * @param wire The I2C port to use, typically Wire.
-	 *
-	 * @param addr The address you've set using the A0 and A1 pins, 0-3. This will be converted to the
-	 * appropriate I2C address. Or you can directly specify the actual I2C address 0-127.
-	 *
-	 * @param intPin The interrupt pin (-1 = not used). Note: interrupts are not currently supported.
-	 */
-	SC16IS740(TwoWire &wire, int addr, int intPin = -1);
-	virtual ~SC16IS740();
+	SC16IS740Base();
+	virtual ~SC16IS740Base();
 
 	/**
 	 * @brief Set the oscillator frequency in Hz (default: 1843200)
 	 *
 	 * You must call this before begin
 	 */
-	inline SC16IS740 &withOscillatorHz(int value) { oscillatorHz = value; return *this; };
+	inline SC16IS740Base &withOscillatorHz(int value) { oscillatorHz = value; return *this; };
 
 	/**
 	 * @brief Set up the chip. You must do this before reading or writing.
@@ -48,7 +38,7 @@ public:
 	 * OPTIONS_7N1, OPTIONS_7E1, OPTIONS_7O1
 	 * OPTIONS_7N2, OPTIONS_7E2, OPTIONS_7O2
 	 */
-	void begin(int baudRate, uint8_t options = OPTIONS_8N1);
+	bool begin(int baudRate, uint8_t options = OPTIONS_8N1);
 
 	/**
 	 * @brief Defines what should happen when calls to write()/print()/println()/printlnf() that would overrun the buffer.
@@ -144,7 +134,7 @@ public:
      *
      * @param reg The register number to read. Note that this should be the register 0 - 16, before shifting for channel.
      */
-	uint8_t readRegister(uint8_t reg);
+	virtual uint8_t readRegister(uint8_t reg) = 0;
 
 	/**
      * @brief Write a register
@@ -153,7 +143,7 @@ public:
      *
      * @param value The value to write
      */
-	bool writeRegister(uint8_t reg, uint8_t value);
+	virtual bool writeRegister(uint8_t reg, uint8_t value) = 0;
 
 
 	static const uint8_t OPTIONS_8N1 = 0b000011;
@@ -204,12 +194,102 @@ public:
 
 protected:
 	/**
+	 * @brief Called from begin to allow things like wire.begin()
+	 */
+	virtual bool preBegin() { return true; };
+
+	/**
+	 * @brief Maximum number of bytes that can be read by readInternal
+	 */
+	virtual size_t readInternalMax() const = 0;
+
+	/**
+	 * @brief Internal function to read data
+	 *
+	 * It can only read 32 bytes at a time, the maximum that will fit in a 32 byte I2C transaction with
+	 * the register address in the first byte.
+	 */
+	virtual bool readInternal(uint8_t *buffer, size_t size) = 0;
+
+	/**
+	 * @brief Maximum number of bytes that can be written by writeInternal
+	 */
+	virtual size_t writeInternalMax() const = 0;
+
+	/**
+	 * @brief Internal function to write data
+	 *
+	 * It can only write 31 bytes at a time, the maximum that will fit in a 32 byte I2C transaction with
+	 * the register address in the first byte.
+	 */
+	virtual bool writeInternal(const uint8_t *buffer, size_t size) = 0;
+
+
+
+
+
+	int oscillatorHz = 1843200;
+	bool hasPeek = false;
+	uint8_t peekByte = 0;
+	bool writeBlocksWhenFull = true;
+};
+
+class SC16IS740 : public SC16IS740Base {
+public:
+	/**
+	 * @brief Construct the UART object. Typically done as a global variable.
+	 *
+	 * @param wire The I2C port to use, typically Wire.
+	 *
+	 * @param addr The address you've set using the A0 and A1 pins, 0-3. This will be converted to the
+	 * appropriate I2C address. Or you can directly specify the actual I2C address 0-127.
+	 */
+	SC16IS740(TwoWire &wire, int addr);
+
+	/**
+	 * @brief Destructor. You typically don't delete one of these as it's normally a global variable.
+	 */
+	virtual ~SC16IS740();
+
+    /**
+     * @brief Read a register
+     *
+     * @param reg The register number to read. Note that this should be the register 0 - 16, before shifting for channel.
+     */
+	virtual uint8_t readRegister(uint8_t reg);
+
+	/**
+     * @brief Write a register
+     *
+     * @param reg The register number to write. Note that this should be the register 0 - 16, before shifting for channel.
+     *
+     * @param value The value to write
+     */
+	virtual bool writeRegister(uint8_t reg, uint8_t value);
+
+protected:
+	/**
+	 * Called during begin to initialize Wire (I2C)
+	 */
+	virtual bool preBegin();
+
+	/**
+	 * @brief Maximum number of bytes that can be read by readInternal
+	 */
+	inline size_t readInternalMax() const { return 32; };
+
+	/**
 	 * @brief Internal function to read data
 	 *
 	 * It can only read 32 bytes at a time, the maximum that will fit in a 32 byte I2C transaction with
 	 * the register address in the first byte.
 	 */
 	virtual bool readInternal(uint8_t *buffer, size_t size);
+
+	/**
+	 * @brief Maximum number of bytes that can be written by writeInternal
+	 */
+	inline size_t writeInternalMax() const { return 31; };
 
 	/**
 	 * @brief Internal function to write data
@@ -219,14 +299,135 @@ protected:
 	 */
 	virtual bool writeInternal(const uint8_t *buffer, size_t size);
 
-
 	TwoWire &wire;
 	int addr; // This is the actual I2C address
-	int intPin; // Pin used for interrupts or -1
-	int oscillatorHz = 1843200;
-	bool hasPeek = false;
-	uint8_t peekByte = 0;
-	bool writeBlocksWhenFull = true;
+
 };
+
+class SC16IS740SPI : public SC16IS740Base {
+public:
+	/**
+	 * @brief Construct the UART object. Typically done as a global variable.
+	 *
+	 * @param spi The SPI port to use, typically SPI (A pins) or SPI1 (D pins).
+	 *
+	 * @param cs The pin to use for the CS (chip select) or SS (slave select) pin. Often the
+	 * pin A2 is used for SPI and D5 for SPI1, but any free GPIO pin can be used.
+	 *
+	 * @param intPin The pin to use for interrupts from the SC16IS740. Not currently used.
+	 * If not using interrupts, omit this parameter or pass -1.
+	 */
+	SC16IS740SPI(SPIClass &spi, int cs, int intPin = -1);
+
+	/**
+	 * @brief Destructor. You typically don't delete one of these as it's normally a global variable.
+	 */
+	virtual ~SC16IS740SPI();
+
+    /**
+     * @brief Read a register
+     *
+     * @param reg The register number to read. Note that this should be the register 0 - 16, before shifting for channel.
+     */
+	virtual uint8_t readRegister(uint8_t reg);
+
+	/**
+     * @brief Write a register
+     *
+     * @param reg The register number to write. Note that this should be the register 0 - 16, before shifting for channel.
+     *
+     * @param value The value to write
+     */
+	virtual bool writeRegister(uint8_t reg, uint8_t value);
+
+	/**
+	 * @brief Sets the SPI clock speed (default: 4 MHz)
+	 */
+	inline SC16IS740SPI &withSpiClockSpeedMHz(uint8_t value) { spiClockSpeedMHz = value; return *this; };
+
+	/**
+	 * @brief Sets shared bus mode
+	 *
+	 * In shared bus mode, every SPI transaction will reset the SPI mode, speed, and bit order. This is useful if you
+	 * have multiple devices on a single SPI bus with different settings. The problem is that this appears to cause
+	 * data corruption on the STM32F205 unless you wait a bit after changing the settings. This apparently required
+	 * delay is set using the delayus parameter.
+	 *
+	 * @param delayus Amount of time in microseconds to delay after changing SPI settings to allow the bus to settle.
+	 */
+	inline SC16IS740SPI &withSharedBus(unsigned long delayus) { sharedBus = true; sharedBusDelay = delayus; return *this;};
+
+protected:
+	/**
+	 * Called during begin to initialize SPI
+	 */
+	virtual bool preBegin();
+
+	/**
+	 * @brief Maximum number of bytes that can be read by readInternal
+	 */
+	inline size_t readInternalMax() const { return 64; };
+
+	/**
+	 * @brief Internal function to read data
+	 *
+	 * It can only read 32 bytes at a time, the maximum that will fit in a 32 byte I2C transaction with
+	 * the register address in the first byte.
+	 */
+	virtual bool readInternal(uint8_t *buffer, size_t size);
+
+	/**
+	 * @brief Maximum number of bytes that can be written by writeInternal
+	 */
+	inline size_t writeInternalMax() const { return 64; };
+
+	/**
+	 * @brief Internal function to write data
+	 *
+	 * It can only write 31 bytes at a time, the maximum that will fit in a 32 byte I2C transaction with
+	 * the register address in the first byte.
+	 */
+	virtual bool writeInternal(const uint8_t *buffer, size_t size);
+
+	/**
+	 * @brief Begins an SPI transaction, setting the CS line LOW.
+	 * Also sets the SPI speed and mode settings if sharedBus == true
+	 */
+	void beginTransaction();
+
+	/**
+	 * @brief Ends an SPI transaction, basically just setting the CS line high.
+	 */
+	void endTransaction();
+
+	/**
+	 * @brief Sets the SPI bus speed, mode and byte order
+	 *
+	 * This is done in begin() normally or in beginTransaction() if sharedBus == true.
+	 *
+	 * The issue is that changing the bus speed and settings requires a delay for things to
+	 * sync back up. If the SPI flash is the only thing on that bus, the delay is unnecessary
+	 * because the speed and mode can be set during begin() instead and just left that way.
+	 */
+	void setSpiSettings();
+
+
+	SPIClass &spi;
+	int cs;
+	int intPin;
+
+	/**
+	 * @brief The maximum speed to use. Most flash modules can handle 60 MHz without difficulties.
+	 *
+	 * Flash-chip-specific subclasses can override this if they need a slower speed.
+	 */
+	uint8_t spiClockSpeedMHz = 4;
+
+	bool sharedBus = false;
+	unsigned long sharedBusDelay = 200; // microseconds
+
+};
+
+
 
 #endif /* __SC16IS740RK_H */

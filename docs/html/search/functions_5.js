@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['sc16is740',['SC16IS740',['../class_s_c16_i_s740.html#a48a15f05e738b52cca9549046b6360c5',1,'SC16IS740']]]
+  ['getwriteerror',['getWriteError',['../class_print.html#a88a4a829fb5d589efb43955ad0cbddcc',1,'Print']]]
 ];

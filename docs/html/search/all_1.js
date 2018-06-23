@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['begin',['begin',['../class_s_c16_i_s740.html#a2914d7b2eb94a0d9413c295611814cd2',1,'SC16IS740']]],
-  ['blockonoverrun',['blockOnOverrun',['../class_s_c16_i_s740.html#a146f0afeb2d5efe71d2c44285a8260dd',1,'SC16IS740']]]
+  ['begin',['begin',['../class_s_c16_i_s740_base.html#a01cf74d26ed768fd404d7200e28c705e',1,'SC16IS740Base']]],
+  ['begintransaction',['beginTransaction',['../class_s_c16_i_s740_s_p_i.html#acfdd43458969269c7790321ba5240ebd',1,'SC16IS740SPI']]],
+  ['blockonoverrun',['blockOnOverrun',['../class_s_c16_i_s740_base.html#ac435975db928fa5739d2aeb4d747d5c7',1,'SC16IS740Base']]]
 ];

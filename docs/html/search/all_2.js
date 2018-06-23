@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['flush',['flush',['../class_s_c16_i_s740.html#a4dc8f7f3e110f593bae82b7ebf3086cd',1,'SC16IS740']]]
+  ['clearwriteerror',['clearWriteError',['../class_print.html#aec9ecf84cc6d9087a650def3cefc459e',1,'Print']]]
 ];

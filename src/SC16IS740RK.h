@@ -245,6 +245,10 @@ public:
 	 * appropriate I2C address. Or you can directly specify the actual I2C address 0-127.
 	 */
 	SC16IS740(TwoWire &wire, int addr);
+
+	/**
+	 * @brief Destructor. You typically don't delete one of these as it's normally a global variable.
+	 */
 	virtual ~SC16IS740();
 
     /**
@@ -302,7 +306,22 @@ protected:
 
 class SC16IS740SPI : public SC16IS740Base {
 public:
+	/**
+	 * @brief Construct the UART object. Typically done as a global variable.
+	 *
+	 * @param spi The SPI port to use, typically SPI (A pins) or SPI1 (D pins).
+	 *
+	 * @param cs The pin to use for the CS (chip select) or SS (slave select) pin. Often the
+	 * pin A2 is used for SPI and D5 for SPI1, but any free GPIO pin can be used.
+	 *
+	 * @param intPin The pin to use for interrupts from the SC16IS740. Not currently used.
+	 * If not using interrupts, omit this parameter or pass -1.
+	 */
 	SC16IS740SPI(SPIClass &spi, int cs, int intPin = -1);
+
+	/**
+	 * @brief Destructor. You typically don't delete one of these as it's normally a global variable.
+	 */
 	virtual ~SC16IS740SPI();
 
     /**
@@ -322,7 +341,7 @@ public:
 	virtual bool writeRegister(uint8_t reg, uint8_t value);
 
 	/**
-	 * @brief Sets the SPI clock speed (default: 30 MHz)
+	 * @brief Sets the SPI clock speed (default: 4 MHz)
 	 */
 	inline SC16IS740SPI &withSpiClockSpeedMHz(uint8_t value) { spiClockSpeedMHz = value; return *this; };
 
@@ -403,8 +422,8 @@ protected:
 	 * Flash-chip-specific subclasses can override this if they need a slower speed.
 	 */
 	uint8_t spiClockSpeedMHz = 4;
-	bool sharedBus = false;
 
+	bool sharedBus = false;
 	unsigned long sharedBusDelay = 200; // microseconds
 
 };

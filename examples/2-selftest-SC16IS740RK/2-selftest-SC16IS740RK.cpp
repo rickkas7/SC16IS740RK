@@ -6,8 +6,8 @@ SerialLogHandler logHandler;
 
 SYSTEM_THREAD(ENABLED);
 
-//SC16IS740 extSerial(Wire, 0);
-SC16IS740SPI extSerial(SPI, A2);
+SC16IS740 extSerial(Wire, 0);
+//SC16IS740SPI extSerial(SPI, A2);
 
 const int SERIAL_RESET_PIN = -1; // -1 to disable
 
@@ -54,9 +54,7 @@ void setup() {
 	// Optional: The default Wire (I2C) speed is 100 KHz, but the SC16IS740 can operate at high speed,
 	// 400 KHz, which is recommended if you need higher baud rates. All of the devices on the I2C bus
 	// must support the higher speed, however.
-	// I get some failures at low baud rates (under 9600) when using high speed I2C for reasons I don't
-	// understand, so it's best to not enable this unless you need it.
-	// Wire.setSpeed(CLOCK_SPEED_400KHZ);
+	Wire.setSpeed(CLOCK_SPEED_400KHZ);
 
 	extSerial.begin(9600);
 }
@@ -254,8 +252,12 @@ bool testLarge1() {
 
 	int readIndex = 0;
 
-	for(size_t ii = 0; ii < sizeof(tempBuf); ) {
-		while(ii < sizeof(tempBuf) && Serial1.availableForWrite()) {
+	unsigned long start = millis();
+
+	for(size_t ii = 0; ii < sizeof(tempBuf) || readIndex < sizeof(tempBuf); ) {
+		// Don't fill the entire send FIFO as data may be lost because the send and receive FIFOs are
+		// both 64 bytes
+		while(ii < sizeof(tempBuf) && Serial1.availableForWrite() > 32) {
 			Serial1.write(tempBuf[ii]);
 			ii++;
 		}
@@ -267,6 +269,10 @@ bool testLarge1() {
 				return false;
 			}
 			readIndex++;
+		}
+		if (millis() - start >= 30000) {
+			Log.error("testLargefailed line=%d timeout ii=%u readIndex=%u", __LINE__, ii, readIndex);
+			return false;
 		}
 	}
 

@@ -7,11 +7,13 @@
 
 Sometimes you need more serial ports (UARTs) than are provided on the Particle Photon and Electron. One handy technique is to use an external I2C/SPI UART, such as the NXP SC16IS740.
 
-This is just the first iteration of this project and only supports I2C and does not support hardware or software flow control. Other features will be added later.
+This version supports I2C and SPI, but does not support hardware or software flow control or interrupts. Other features will be added later.
 
 One difficulty is that the chip is only available in surface mount packages such as the TSSOP16. You'll need to use a [TSSOP-16 breakout board](https://www.adafruit.com/product/1207), make your own board (as described below) or put it directly on your own circuit board. As the pins are very small you may find it difficult to hand solder; it really should be mounted using a reflow oven.
 
-You can connect up to 4 separate SC16IS740 chips to the single I2C interface on D0 and D1.
+You can connect up to 4 separate SC16IS740 chips to the single I2C interface on D0 and D1 by I2C.
+
+The number of separate chips for SPI is limited to the number of available GPIO pins, as each one must have a unique CS pin, but they can share a single SPI bus.
 
 When using a 1.8432 MHz oscillator it supports baud rate from 50 to 115200.
 
@@ -172,6 +174,11 @@ For the primary SPI (SPI):
 | MISO | DO             | A4           | Blue          |
 | MOSI | DI             | A5           | Green         |
 
+Instead of instantiating a SC16IS740 object, use the SC16IS740SPI object:
+
+```
+SC16IS740SPI extSerial(SPI, A2);
+```
 
 For the secondary SPI (SPI1):
 
@@ -182,3 +189,8 @@ For the secondary SPI (SPI1):
 | MISO | DO             | D3           | Blue          |
 | MOSI | DI             | D2           | Green         |
 
+Instead of instantiating a SC16IS740 object, use the SC16IS740SPI object:
+
+```
+SC16IS740SPI extSerial(SPI1, D5);
+```

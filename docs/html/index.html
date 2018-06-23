@@ -65,15 +65,50 @@ $(function() {
 <div class="title">SC16IS740RK </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><em>Interface to <a class="el" href="class_s_c16_i_s740.html" title="Library for using the SC16IS740 UART on the Particle platform. ">SC16IS740</a> UART for Particle devices</em></p>
+<div class="textblock"><p><em>Interface to <a class="el" href="class_s_c16_i_s740.html">SC16IS740</a> UART for Particle devices</em></p>
 <ul>
 <li>Project Location: <a href="https://github.com/rickkas7/SC16IS740RK">https://github.com/rickkas7/SC16IS740RK</a></li>
 <li>License: MIT. You can use this library without fee in open and closed-source projects.</li>
 </ul>
-<p>Sometimes you need more serial ports (UARTs) than are provided on the Particle Photon and Electron. One handy technique is to use an external I2C/SPI UART, such as the NXP <a class="el" href="class_s_c16_i_s740.html" title="Library for using the SC16IS740 UART on the Particle platform. ">SC16IS740</a>.</p>
-<p>This is just the first iteration of this project and only supports I2C and does not support hardware or software flow control. Other features will be added later.</p>
+<p>Sometimes you need more serial ports (UARTs) than are provided on the Particle Photon and Electron. One handy technique is to use an external I2C/SPI UART, such as the NXP <a class="el" href="class_s_c16_i_s740.html">SC16IS740</a>.</p>
+<p>This version supports I2C and SPI, but does not support hardware or software flow control or interrupts. Other features will be added later.</p>
 <p>One difficulty is that the chip is only available in surface mount packages such as the TSSOP16. You'll need to use a <a href="https://www.adafruit.com/product/1207">TSSOP-16 breakout board</a>, make your own board (as described below) or put it directly on your own circuit board. As the pins are very small you may find it difficult to hand solder; it really should be mounted using a reflow oven.</p>
+<p>You can connect up to 4 separate <a class="el" href="class_s_c16_i_s740.html">SC16IS740</a> chips to the single I2C interface on D0 and D1 by I2C.</p>
+<p>The number of separate chips for SPI is limited to the number of available GPIO pins, as each one must have a unique CS pin, but they can share a single SPI bus.</p>
+<p>When using a 1.8432 MHz oscillator it supports baud rate from 50 to 115200.</p>
+<p>Note that the default I2C speed is 100 KHz, so it will be impossible to read or write continuously at 115200, but bursts that fit within the size of the FIFO (64 bytes) are fine.</p>
+<p>Also, you can increase the speed of the I2C bus if all of the I2C devices support high speed mode by adding:</p>
+<div class="fragment"><div class="line">Wire.setSpeed(CLOCK_SPEED_400KHZ);</div></div><!-- fragment --><h2>Using the library</h2>
+<p>Include the SC16IS740RK library in your project and use it as follows:</p>
+<div class="fragment"><div class="line">#include &quot;SC16IS740RK.h&quot;</div><div class="line"></div><div class="line">// Pick a debug level from one of these two:</div><div class="line">SerialLogHandler logHandler;</div><div class="line">// SerialLogHandler logHandler(LOG_LEVEL_TRACE);</div><div class="line"></div><div class="line">SC16IS740 extSerial(Wire, 0);</div><div class="line"></div><div class="line">char out = &#39; &#39;;</div><div class="line"></div><div class="line">void setup() {</div><div class="line">    Serial.begin(9600);</div><div class="line"></div><div class="line">    delay(5000);</div><div class="line"></div><div class="line">    extSerial.begin(9600);</div><div class="line">}</div><div class="line"></div><div class="line">void loop() {</div><div class="line">    while(extSerial.available()) {</div><div class="line">        int c = extSerial.read();</div><div class="line">        Log.info(&quot;received %d&quot;, c);</div><div class="line">    }</div><div class="line"></div><div class="line">    extSerial.print(out);</div><div class="line">    if (++out &gt;= 127) {</div><div class="line">        out = &#39; &#39;;</div><div class="line">    }</div><div class="line">    delay(100);</div><div class="line">}</div></div><!-- fragment --><div class="fragment"><div class="line">SC16IS740 extSerial(Wire, 0);</div></div><!-- fragment --><p>This initializes an <a class="el" href="class_s_c16_i_s740.html">SC16IS740</a> object as a global variable. The second parameter is the address set on the A0 and A1 pins.</p>
+<div class="fragment"><div class="line">extSerial.begin(9600);</div></div><!-- fragment --><p>Call begin() in setup() to set the baud rate. You can also set the number of data bits, parity, and stop bits.</p>
+<p>The <a class="el" href="class_s_c16_i_s740.html">SC16IS740</a> library derives from <a class="el" href="class_stream.html" title="Arduino/Wiring Stream Class. ">Stream</a> so the standard Arduino features like print, println, readUntil, etc. all work with this library.</p>
 <h2>API</h2>
+<h4><code>public</code><a href="#class_s_c16_i_s740_1a48a15f05e738b52cca9549046b6360c5"><code>SC16IS740</code></a><code>(TwoWire &amp; wire,int addr,int intPin)</code></h4>
+<p>Construct the UART object. Typically done as a global variable.</p>
+<h4>Parameters</h4>
+<ul>
+<li><code>wire</code> The I2C port to use, typically Wire.</li>
+<li><code>addr</code> The address you've set using the A0 and A1 pins, 0-3. This will be converted to the appropriate I2C address. Or you can directly specify the actual I2C address 0-127.</li>
+<li><code>intPin</code> The interrupt pin (-1 = not used). Note: interrupts are not currently supported.</li>
+</ul>
+<h4><code>public inline</code><a href="#class_s_c16_i_s740"><code>SC16IS740</code></a><code>&amp;</code><a href="#class_s_c16_i_s740_1a2bade8e74f73cd4175b295d7f6e620ce"><code>withOscillatorHz</code></a><code>(int value)</code></h4>
+<p>Set the oscillator frequency in Hz (default: 1843200)</p>
+<p>You must call this before begin.</p>
+<h4><code>public void</code><a href="#class_s_c16_i_s740_1a2914d7b2eb94a0d9413c295611814cd2"><code>begin</code></a><code>(int baudRate,uint8_t options)</code></h4>
+<p>Set up the chip. You must do this before reading or writing.</p>
+<h4>Parameters</h4>
+<ul>
+<li><code>baudRate</code> the baud rate (see below)</li>
+<li><code>options</code> The number of data bits, parity, and stop bits</li>
+</ul>
+<p>You can call begin more than once if you want to change the baud rate. The FIFOs are cleared when you call begin.</p>
+<p>Available baud rates depend on your oscillator, but with a 1.8432 MHz oscillator, the following are supported: 50, 75, 110, 134.5, 150, 300, 600, 1200, 1800, 2000, 2400, 3600, 4800, 7200, 9600, 19200, 38400, 57600, 115200</p>
+<p>The valid options in standard number of bits; none=N, even=E, odd=O; number of stop bits format: OPTIONS_8N1, OPTIONS_8E1, OPTIONS_8O1 OPTIONS_8N2, OPTIONS_8E2, OPTIONS_8O2 OPTIONS_7N1, OPTIONS_7E1, OPTIONS_7O1 OPTIONS_7N2, OPTIONS_7E2, OPTIONS_7O2</p>
+<h4><code>public inline void</code><a href="#class_s_c16_i_s740_1a146f0afeb2d5efe71d2c44285a8260dd"><code>blockOnOverrun</code></a><code>(bool value)</code></h4>
+<p>Defines what should happen when calls to <a href="#class_s_c16_i_s740_1ae95bfe10661800710fb0c3ed399dd6da">write()</a>/print()/println()/printlnf() that would overrun the buffer.</p>
+<p>blockOnOverrun(true) - this is the default setting. When there is no room in the buffer for the data to be written, the program waits/blocks until there is room. This avoids buffer overrun, where data that has not yet been sent over serial is overwritten by new data. Use this option for increased data integrity at the cost of slowing down realtime code execution when lots of serial data is sent at once.</p>
+<p>blockOnOverrun(false) - when there is no room in the buffer for data to be written, the data is written anyway, causing the new data to replace the old data. This option is provided when performance is more important than data integrity.</p>
 <h2>Test Circuit</h2>
 <p>In this circuit, I made the following connections:</p>
 <ul>
@@ -88,7 +123,7 @@ $(function() {
 </ul>
 <p>Remember in serial you typically connect TX to RX and vice-versa.</p>
 <p>Also note that the serial is 3.3V logic level. You'll need a driver to connect it to a real RS232C device using +/- 12V signals!</p>
-<p>The <a class="el" href="class_s_c16_i_s740.html" title="Library for using the SC16IS740 UART on the Particle platform. ">SC16IS740</a> is 5V tolerant on RX, however only when powered! If you can run into a case where the <a class="el" href="class_s_c16_i_s740.html" title="Library for using the SC16IS740 UART on the Particle platform. ">SC16IS740</a> is not powered, you can only supply 3.8V to RX.</p>
+<p>The <a class="el" href="class_s_c16_i_s740.html">SC16IS740</a> is 5V tolerant on RX, however only when powered! If you can run into a case where the <a class="el" href="class_s_c16_i_s740.html">SC16IS740</a> is not powered, you can only supply 3.8V to RX.</p>
 <p>![Photon Test](images/photon.jpg)</p>
 <p>![Electron Test](images/electron.jpg)</p>
 <h2>Custom breakout board</h2>
@@ -111,7 +146,38 @@ board</div></div>
 <img src="board2.jpg" alt="board2.jpg"/>
 <div class="caption">
 board2</div></div>
-</div></div><!-- contents -->
+<p> The holes marked A0 and A1 are designed for standard breakaway 0.1" header pins. The addresses have pull-downs on them so the default is 0, but if you install the header pins and a jumper, they'll be pulled high so you can set address 0 - 3.</p>
+<h2>SPI Mode</h2>
+<p>In most cases, you'll save GPIO pins by using I2C. However, if you need the fastest speed possible, such as if you want multiple 115200 data streams, or if you want to do 230400 baud, you'll want to use SPI.</p>
+<p>For the primary SPI (SPI):</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Name  </th><th class="markdownTableHeadNone">Flash Alt Name  </th><th class="markdownTableHeadNone">Particle Pin  </th><th class="markdownTableHeadNone">Example Color   </th></tr>
+<tr class="markdownTableBody" class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">SS  </td><td class="markdownTableBodyNone">CS  </td><td class="markdownTableBodyNone">A2  </td><td class="markdownTableBodyNone">White   </td></tr>
+<tr class="markdownTableBody" class="markdownTableRowEven">
+<td class="markdownTableBodyNone">SCK  </td><td class="markdownTableBodyNone">CLK  </td><td class="markdownTableBodyNone">A3  </td><td class="markdownTableBodyNone">Orange   </td></tr>
+<tr class="markdownTableBody" class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MISO  </td><td class="markdownTableBodyNone">DO  </td><td class="markdownTableBodyNone">A4  </td><td class="markdownTableBodyNone">Blue   </td></tr>
+<tr class="markdownTableBody" class="markdownTableRowEven">
+<td class="markdownTableBodyNone">MOSI  </td><td class="markdownTableBodyNone">DI  </td><td class="markdownTableBodyNone">A5  </td><td class="markdownTableBodyNone">Green   </td></tr>
+</table>
+<p>Instead of instantiating a <a class="el" href="class_s_c16_i_s740.html">SC16IS740</a> object, use the <a class="el" href="class_s_c16_i_s740_s_p_i.html">SC16IS740SPI</a> object:</p>
+<div class="fragment"><div class="line">SC16IS740SPI extSerial(SPI, A2);</div></div><!-- fragment --><p>For the secondary SPI (SPI1):</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Name  </th><th class="markdownTableHeadNone">Flash Alt Name  </th><th class="markdownTableHeadNone">Particle Pin  </th><th class="markdownTableHeadNone">Example Color   </th></tr>
+<tr class="markdownTableBody" class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">SS  </td><td class="markdownTableBodyNone">CS  </td><td class="markdownTableBodyNone">D5  </td><td class="markdownTableBodyNone">White   </td></tr>
+<tr class="markdownTableBody" class="markdownTableRowEven">
+<td class="markdownTableBodyNone">SCK  </td><td class="markdownTableBodyNone">CLK  </td><td class="markdownTableBodyNone">D4  </td><td class="markdownTableBodyNone">Orange   </td></tr>
+<tr class="markdownTableBody" class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MISO  </td><td class="markdownTableBodyNone">DO  </td><td class="markdownTableBodyNone">D3  </td><td class="markdownTableBodyNone">Blue   </td></tr>
+<tr class="markdownTableBody" class="markdownTableRowEven">
+<td class="markdownTableBodyNone">MOSI  </td><td class="markdownTableBodyNone">DI  </td><td class="markdownTableBodyNone">D2  </td><td class="markdownTableBodyNone">Green   </td></tr>
+</table>
+<p>Instead of instantiating a <a class="el" href="class_s_c16_i_s740.html">SC16IS740</a> object, use the <a class="el" href="class_s_c16_i_s740_s_p_i.html">SC16IS740SPI</a> object:</p>
+<div class="fragment"><div class="line">SC16IS740SPI extSerial(SPI1, D5);</div></div><!-- fragment --> </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

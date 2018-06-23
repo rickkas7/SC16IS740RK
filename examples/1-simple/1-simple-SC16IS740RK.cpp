@@ -4,7 +4,8 @@
 SerialLogHandler logHandler;
 // SerialLogHandler logHandler(LOG_LEVEL_TRACE);
 
-SC16IS740 extSerial(Wire, 0);
+// SC16IS740 extSerial(Wire, 0);
+SC16IS740SPI extSerial(SPI, A2);
 
 char out = ' ';
 

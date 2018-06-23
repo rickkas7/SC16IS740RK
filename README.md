@@ -158,3 +158,27 @@ I've included the Eagle CAD files for the breakout board I used above.
 ![board2](images/board2.jpg)
 
 The holes marked A0 and A1 are designed for standard breakaway 0.1" header pins. The addresses have pull-downs on them so the default is 0, but if you install the header pins and a jumper, they'll be pulled high so you can set address 0 - 3.
+
+## SPI Mode
+
+In most cases, you'll save GPIO pins by using I2C. However, if you need the fastest speed possible, such as if you want multiple 115200 data streams, or if you want to do 230400 baud, you'll want to use SPI.
+
+For the primary SPI (SPI):
+
+| Name | Flash Alt Name | Particle Pin | Example Color |
+| ---- | -------------- | ------------ | ------------- |
+| SS   | CS             | A2           | White         |
+| SCK  | CLK            | A3           | Orange        |
+| MISO | DO             | A4           | Blue          |
+| MOSI | DI             | A5           | Green         |
+
+
+For the secondary SPI (SPI1):
+
+| Name | Flash Alt Name | Particle Pin | Example Color |
+| ---- | -------------- | ------------ | ------------- |
+| SS   | CS             | D5           | White         |
+| SCK  | CLK            | D4           | Orange        |
+| MISO | DO             | D3           | Blue          |
+| MOSI | DI             | D2           | Green         |
+

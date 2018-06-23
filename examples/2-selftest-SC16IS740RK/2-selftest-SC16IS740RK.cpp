@@ -1,12 +1,13 @@
 #include "SC16IS740RK.h"
 
 // Pick a debug level from one of these two:
-// SerialLogHandler logHandler;
-SerialLogHandler logHandler; // (LOG_LEVEL_TRACE);
+SerialLogHandler logHandler;
+// SerialLogHandler logHandler(LOG_LEVEL_TRACE);
 
 SYSTEM_THREAD(ENABLED);
 
-SC16IS740 extSerial(Wire, 0, D2);
+//SC16IS740 extSerial(Wire, 0);
+SC16IS740SPI extSerial(SPI, A2);
 
 const int SERIAL_RESET_PIN = -1; // -1 to disable
 
@@ -225,7 +226,7 @@ bool testFifoBlock1(bool is7bit) {
 	for(int ch = 0; ch < (int) numToTest; ) {
 		int count = extSerial.read(buf2, 64);
 		if (count > 0) {
-			for(size_t jj = 0; jj < count; jj++) {
+			for(size_t jj = 0; jj < (size_t) count; jj++) {
 				if (buf2[jj] != tempBuf[ch + jj]) {
 					Log.error("failed line=%d ch=%d jj=%u value=%d", __LINE__, ch, jj, buf2[jj]);
 					return false;

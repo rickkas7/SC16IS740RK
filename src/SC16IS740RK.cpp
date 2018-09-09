@@ -69,8 +69,8 @@ int SC16IS740Base::read() {
 
 int SC16IS740Base::peek() {
 	if (!hasPeek) {
-		hasPeek = true;
 		peekByte = read();
+		hasPeek = true;
 	}
 	return peekByte;
 }

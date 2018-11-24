@@ -9,6 +9,8 @@ Sometimes you need more serial ports (UARTs) than are provided on the Particle P
 
 This version supports I2C and SPI, but does not support hardware or software flow control or interrupts. Other features will be added later.
 
+This library is also compatible with the mesh devices: Argon, Boron, and Xenon.
+
 One difficulty is that the chip is only available in surface mount packages such as the TSSOP16. You'll need to use a [TSSOP-16 breakout board](https://www.adafruit.com/product/1207), make your own board (as described below) or put it directly on your own circuit board. As the pins are very small you may find it difficult to hand solder; it really should be mounted using a reflow oven.
 
 You can connect up to 4 separate SC16IS740 chips to the single I2C interface on D0 and D1 by I2C.

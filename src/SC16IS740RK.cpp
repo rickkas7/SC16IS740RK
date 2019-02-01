@@ -324,12 +324,17 @@ bool SC16IS740SPI::writeRegister(uint8_t reg, uint8_t value) {
 
 
 bool SC16IS740SPI::readInternal(uint8_t *buffer, size_t size) {
-
 	beginTransaction();
 
 	spi.transfer(0x80 | RHR_THR_REG << 3);
+#if HAL_PLATFORM_MESH
+	// On mesh platforms, the DMA spi.transfer is causing a SOS fault. Disable for now.
+	for(size_t ii = 0; ii < size; ii++) {
+		buffer[ii] = spi.transfer(0);
+	}
+#else
 	spi.transfer(NULL, buffer, size, NULL);
-
+#endif
 	endTransaction();
 
 	log.trace("readInternal %d bytes", size);
@@ -341,7 +346,14 @@ bool SC16IS740SPI::writeInternal(const uint8_t *buffer, size_t size) {
 	beginTransaction();
 
 	spi.transfer(RHR_THR_REG << 3);
+#if HAL_PLATFORM_MESH
+	// On mesh platforms, the DMA spi.transfer is causing a SOS fault. Disable for now.
+	for(size_t ii = 0; ii < size; ii++) {
+		spi.transfer(buffer[ii]);
+	}
+#else
 	spi.transfer(const_cast<uint8_t *>(buffer), NULL, size, NULL);
+#endif
 
 	endTransaction();
 
@@ -370,5 +382,3 @@ void SC16IS740SPI::setSpiSettings() {
 	spi.setClockSpeed(spiClockSpeedMHz, MHZ); // Default: 4
 	spi.setDataMode(SPI_MODE0);
 }
-
-

@@ -196,3 +196,10 @@ Instead of instantiating a SC16IS740 object, use the SC16IS740SPI object:
 ```
 SC16IS740SPI extSerial(SPI1, D5);
 ```
+
+## Version History
+
+### 0.0.3
+
+On mesh devices, temporarily disable SPI DMA as this causes a SOS fault on multi-byte read or write operations when using SPI. 
+

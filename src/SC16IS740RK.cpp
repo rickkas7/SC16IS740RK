@@ -2,7 +2,7 @@
 
 #include "SC16IS740RK.h"
 
-Logger log("app.ser");
+static Logger log("app.ser");
 
 // Converts addr (0-3) corresponding to the value set by A0 and A1 to an address
 // Note these values are half that of Table 32 in the data sheet because the data sheet

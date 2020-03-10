@@ -199,6 +199,10 @@ SC16IS740SPI extSerial(SPI1, D5);
 
 ## Version History
 
+### 0.0.6
+
+- Fix compiler error for ambiguous requestFrom with 1.5.0-rc.2.
+
 ### 0.0.3
 
 On mesh devices, temporarily disable SPI DMA as this causes a SOS fault on multi-byte read or write operations when using SPI. 

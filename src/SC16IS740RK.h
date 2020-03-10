@@ -300,7 +300,7 @@ protected:
 	virtual bool writeInternal(const uint8_t *buffer, size_t size);
 
 	TwoWire &wire;
-	int addr; // This is the actual I2C address
+	uint8_t addr; // This is the actual I2C address
 
 };
 

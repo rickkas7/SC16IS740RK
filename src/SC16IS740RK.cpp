@@ -235,7 +235,7 @@ bool SC16IS740::readInternal(uint8_t *buffer, size_t size) {
 	wire.write(RHR_THR_REG << 3);
 	wire.endTransmission(false);
 
-	uint8_t numRcvd = wire.requestFrom(addr, size, true);
+	uint8_t numRcvd = wire.requestFrom(addr, size, (uint8_t)true);
 	if (numRcvd < size) {
 		log.info("readInternal failed numRcvd=%u size=%u", numRcvd, size);
 		return false;

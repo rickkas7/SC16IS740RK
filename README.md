@@ -199,6 +199,10 @@ SC16IS740SPI extSerial(SPI1, D5);
 
 ## Version History
 
+### 0.0.7 (2020-05-04)
+
+- Fix compiler error for undefined conversion to SpiClass with 1.5.1-rc.1.
+
 ### 0.0.6
 
 - Fix compiler error for ambiguous requestFrom with 1.5.0-rc.2.

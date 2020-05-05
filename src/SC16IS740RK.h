@@ -319,6 +319,24 @@ public:
 	 */
 	SC16IS740SPI(SPIClass &spi, int cs, int intPin = -1);
 
+#ifdef SYSTEM_VERSION_v151RC1
+	// In 1.5.0-rc.1, SPI interfaces are handled differently. You can still pass in SPI, SPI1, etc.
+	// but the code to handle it varies
+	SC16IS740SPI(::particle::SpiProxy<HAL_SPI_INTERFACE1> &spiProxy, int cs = A2, int intPin = -1) : 
+		spi(spiProxy.instance()), cs(cs), intPin(intPin) {};
+
+#if Wiring_SPI1
+	SC16IS740SPI(::particle::SpiProxy<HAL_SPI_INTERFACE2> &spiProxy, int cs = A2, int intPin = -1) : 
+		spi(spiProxy.instance()), cs(cs), intPin(intPin) {};
+#endif
+
+#if Wiring_SPI2
+	SC16IS740SPI(::particle::SpiProxy<HAL_SPI_INTERFACE3> &spiProxy, int cs = A2, int intPin = -1) : 
+		spi(spiProxy.instance()), cs(cs), intPin(intPin) {};
+#endif
+
+#endif
+
 	/**
 	 * @brief Destructor. You typically don't delete one of these as it's normally a global variable.
 	 */

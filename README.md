@@ -2,6 +2,7 @@
 
 *Interface to SC16IS740 UART for Particle devices*
 
+- [The full browsable API documentation is here.](https://rickkas7.github.io/SC16IS740/)
 - Project Location: https://github.com/rickkas7/SC16IS740RK
 - License: MIT. You can use this library without fee in open and closed-source projects. 
 

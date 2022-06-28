@@ -51,6 +51,14 @@ int SC16IS740Base::availableForWrite() {
 	return readRegister(TXLVL_REG);
 }
 
+SC16IS740Base& SC16IS740Base::withAutoRS485(void){
+	uint8_t reg = readRegister(EFCR_REG);
+	reg |= (1<<5);
+	reg |= (1<<4);
+	writeRegister(EFCR_REG, reg);
+	return *this;
+}
+
 
 int SC16IS740Base::read() {
 	if (hasPeek) {

@@ -20,6 +20,14 @@ public:
 	inline SC16IS740Base &withOscillatorHz(int value) { oscillatorHz = value; return *this; };
 
 	/**
+	 * @brief Sets auto RS485
+	 *
+	 * In Auto RS485 mode, the pin RTS is automatically driven while sending data.
+	 * Run After calling begin().
+	 */
+	SC16IS740Base& withAutoRS485(void);
+
+	/**
 	 * @brief Set up the chip. You must do this before reading or writing.
 	 *
 	 * @param baudRate the baud rate (see below)

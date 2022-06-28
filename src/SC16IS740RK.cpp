@@ -51,6 +51,14 @@ int SC16IS740Base::availableForWrite() {
 	return readRegister(TXLVL_REG);
 }
 
+SC16IS740Base& SC16IS740Base::withAutoRS485(void){
+	uint8_t reg = readRegister(EFCR_REG);
+	reg |= (1<<5);
+	reg |= (1<<4);
+	writeRegister(EFCR_REG, reg);
+	return *this;
+}
+
 
 int SC16IS740Base::read() {
 	if (hasPeek) {
@@ -171,7 +179,7 @@ int SC16IS740Base::read(uint8_t *buffer, size_t size) {
 
 
 
-SC16IS740::SC16IS740(TwoWire &wire, int addr) : wire(wire) {
+SC16IS740::SC16IS740(TwoWire &wire, int addr,int aChannel) : wire(wire) {
 
 	if (addr < (int) sizeof(subAddrs)) {
 		// Use lookup table
@@ -181,6 +189,7 @@ SC16IS740::SC16IS740(TwoWire &wire, int addr) : wire(wire) {
 		// Use actual address
 		this->addr = addr;
 	}
+	channel = aChannel << 1;
 }
 
 SC16IS740::~SC16IS740() {
@@ -196,7 +205,7 @@ bool SC16IS740::preBegin() {
 // on the SC16IS740.
 uint8_t SC16IS740::readRegister(uint8_t reg) {
 	wire.beginTransmission(addr);
-	wire.write(reg << 3);
+	wire.write(reg << 3 | channel);
 	wire.endTransmission(false);
 
 	wire.requestFrom(addr, 1, true);
@@ -210,7 +219,7 @@ uint8_t SC16IS740::readRegister(uint8_t reg) {
 // Note: reg is the register 0 - 15, not the shifted value with the channel select bits
 bool SC16IS740::writeRegister(uint8_t reg, uint8_t value) {
 	wire.beginTransmission(addr);
-	wire.write(reg << 3);
+	wire.write(reg << 3 | channel);
 	wire.write(value);
 
 	int stat = wire.endTransmission(true);
@@ -232,7 +241,7 @@ bool SC16IS740::writeRegister(uint8_t reg, uint8_t value) {
 
 bool SC16IS740::readInternal(uint8_t *buffer, size_t size) {
 	wire.beginTransmission(addr);
-	wire.write(RHR_THR_REG << 3);
+	wire.write(RHR_THR_REG << 3 | channel);
 	wire.endTransmission(false);
 
 	uint8_t numRcvd = wire.requestFrom(addr, size, (uint8_t)true);
@@ -253,7 +262,7 @@ bool SC16IS740::readInternal(uint8_t *buffer, size_t size) {
 
 bool SC16IS740::writeInternal(const uint8_t *buffer, size_t size) {
 	wire.beginTransmission(addr);
-	wire.write(RHR_THR_REG << 3);
+	wire.write(RHR_THR_REG << 3 | channel);
 	wire.write(buffer, size);
 
 	int stat = wire.endTransmission(true);
@@ -271,8 +280,8 @@ bool SC16IS740::writeInternal(const uint8_t *buffer, size_t size) {
 	return (stat == 0);
 }
 
-SC16IS740SPI::SC16IS740SPI(SPIClass &spi, int cs, int intPin) : spi(spi), cs(cs), intPin(intPin) {
-
+SC16IS740SPI::SC16IS740SPI(SPIClass &spi, int cs, int intPin,int aChannel) : spi(spi), cs(cs), intPin(intPin) {
+channel = (uint8_t) aChannel << 1;
 }
 SC16IS740SPI::~SC16IS740SPI() {
 
@@ -294,7 +303,7 @@ uint8_t SC16IS740SPI::readRegister(uint8_t reg) {
 
 	beginTransaction();
 
-	spi.transfer(0x80 | reg << 3);
+	spi.transfer(0x80 | reg << 3 | channel);
 	uint8_t value = (uint8_t) spi.transfer(0);
 
 	endTransaction();
@@ -311,7 +320,7 @@ bool SC16IS740SPI::writeRegister(uint8_t reg, uint8_t value) {
 
 	beginTransaction();
 
-	spi.transfer(reg << 3);
+	spi.transfer(reg << 3 | channel);
 	spi.transfer(value);
 
 	endTransaction();
@@ -327,8 +336,9 @@ bool SC16IS740SPI::readInternal(uint8_t *buffer, size_t size) {
 	beginTransaction();
 
 	spi.transfer(0x80 | RHR_THR_REG << 3);
-#if HAL_PLATFORM_MESH
-	// On mesh platforms, the DMA spi.transfer is causing a SOS fault. Disable for now.
+#if HAL_PLATFORM_SPI_DMA_SOURCE_RAM_ONLY
+	//On NRF52840 platforms with older device os < 3.0.0, the DMA ROM spi.transfer is causing a SOS fault. Disable for now.
+	//An optimization could be to check if a transfer is from ROM or RAM.
 	for(size_t ii = 0; ii < size; ii++) {
 		buffer[ii] = spi.transfer(0);
 	}
@@ -345,9 +355,10 @@ bool SC16IS740SPI::readInternal(uint8_t *buffer, size_t size) {
 bool SC16IS740SPI::writeInternal(const uint8_t *buffer, size_t size) {
 	beginTransaction();
 
-	spi.transfer(RHR_THR_REG << 3);
-#if HAL_PLATFORM_MESH
-	// On mesh platforms, the DMA spi.transfer is causing a SOS fault. Disable for now.
+	spi.transfer(RHR_THR_REG << 3 | channel);
+#if HAL_PLATFORM_SPI_DMA_SOURCE_RAM_ONLY
+	//On NRF52840 platforms with older device os, the DMA ROM spi.transfer is causing a SOS fault. Disable for now.
+	//An optimization could be to check if a transfer is from ROM or RAM.	
 	for(size_t ii = 0; ii < size; ii++) {
 		spi.transfer(buffer[ii]);
 	}

@@ -15,6 +15,8 @@ One difficulty is that the chip is only available in surface mount packages such
 
 You can connect up to 4 separate SC16IS740 chips to the single I2C interface on D0 and D1 by I2C.
 
+You can connect a SC16IS752 or SC16IS762 chip to have multiple serial ports with only one chip.
+
 The number of separate chips for SPI is limited to the number of available GPIO pins, as each one must have a unique CS pin, but they can share a single SPI bus.
 
 When using a 1.8432 MHz oscillator it supports baud rate from 50 to 115200.
@@ -80,7 +82,7 @@ The SC16IS740 library derives from Stream so the standard Arduino features like 
 
 ## API
 
-#### `public  `[`SC16IS740`](#class_s_c16_i_s740_1a48a15f05e738b52cca9549046b6360c5)`(TwoWire & wire,int addr,int intPin)` 
+#### `public  `[`SC16IS740`](#class_s_c16_i_s740_1a48a15f05e738b52cca9549046b6360c5)`(TwoWire & wire,int addr,int intPin, int aChannel)` 
 
 Construct the UART object. Typically done as a global variable.
 
@@ -89,7 +91,9 @@ Construct the UART object. Typically done as a global variable.
 
 * `addr` The address you've set using the A0 and A1 pins, 0-3. This will be converted to the appropriate I2C address. Or you can directly specify the actual I2C address 0-127.
 
-* `intPin` The interrupt pin (-1 = not used). Note: interrupts are not currently supported.
+* `intPin` The interrupt pin (-1 = not used). Note: interrupts are not currently supported. Defaults to -1.
+
+* 'aChannel' The channel in a multi-channel serial port ic. Can be 0 or 1 for a SC16IS752 for example. Defaults to 0.
 
 
 #### `public inline `[`SC16IS740`](#class_s_c16_i_s740)` & `[`withOscillatorHz`](#class_s_c16_i_s740_1a2bade8e74f73cd4175b295d7f6e620ce)`(int value)` 
@@ -198,6 +202,12 @@ SC16IS740SPI extSerial(SPI1, D5);
 ```
 
 ## Version History
+
+### 0.0.8 (2022-06-28)
+
+- Added auto RTS driving for RS485 setup option.
+- Added support for multi-channel serial IC's like the SC16IS752.
+- Fixed DMA only supporting RAM transfer check for platform other than mesh.
 
 ### 0.0.7 (2020-05-04)
 

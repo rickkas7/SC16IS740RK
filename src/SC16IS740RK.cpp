@@ -327,8 +327,9 @@ bool SC16IS740SPI::readInternal(uint8_t *buffer, size_t size) {
 	beginTransaction();
 
 	spi.transfer(0x80 | RHR_THR_REG << 3);
-#if HAL_PLATFORM_MESH
-	// On mesh platforms, the DMA spi.transfer is causing a SOS fault. Disable for now.
+#if HAL_PLATFORM_SPI_DMA_SOURCE_RAM_ONLY
+	//On NRF52840 platforms with older device os < 3.0.0, the DMA ROM spi.transfer is causing a SOS fault. Disable for now.
+	//An optimization could be to check if a transfer is from ROM or RAM.
 	for(size_t ii = 0; ii < size; ii++) {
 		buffer[ii] = spi.transfer(0);
 	}
@@ -345,9 +346,10 @@ bool SC16IS740SPI::readInternal(uint8_t *buffer, size_t size) {
 bool SC16IS740SPI::writeInternal(const uint8_t *buffer, size_t size) {
 	beginTransaction();
 
-	spi.transfer(RHR_THR_REG << 3);
-#if HAL_PLATFORM_MESH
-	// On mesh platforms, the DMA spi.transfer is causing a SOS fault. Disable for now.
+	spi.transfer(RHR_THR_REG << 3 | channel);
+#if HAL_PLATFORM_SPI_DMA_SOURCE_RAM_ONLY
+	//On NRF52840 platforms with older device os, the DMA ROM spi.transfer is causing a SOS fault. Disable for now.
+	//An optimization could be to check if a transfer is from ROM or RAM.	
 	for(size_t ii = 0; ii < size; ii++) {
 		spi.transfer(buffer[ii]);
 	}

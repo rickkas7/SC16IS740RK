@@ -179,7 +179,7 @@ int SC16IS740Base::read(uint8_t *buffer, size_t size) {
 
 
 
-SC16IS740::SC16IS740(TwoWire &wire, int addr) : wire(wire) {
+SC16IS740::SC16IS740(TwoWire &wire, int addr,int aChannel) : wire(wire) {
 
 	if (addr < (int) sizeof(subAddrs)) {
 		// Use lookup table
@@ -189,6 +189,7 @@ SC16IS740::SC16IS740(TwoWire &wire, int addr) : wire(wire) {
 		// Use actual address
 		this->addr = addr;
 	}
+	channel = aChannel << 1;
 }
 
 SC16IS740::~SC16IS740() {
@@ -204,7 +205,7 @@ bool SC16IS740::preBegin() {
 // on the SC16IS740.
 uint8_t SC16IS740::readRegister(uint8_t reg) {
 	wire.beginTransmission(addr);
-	wire.write(reg << 3);
+	wire.write(reg << 3 | channel);
 	wire.endTransmission(false);
 
 	wire.requestFrom(addr, 1, true);
@@ -218,7 +219,7 @@ uint8_t SC16IS740::readRegister(uint8_t reg) {
 // Note: reg is the register 0 - 15, not the shifted value with the channel select bits
 bool SC16IS740::writeRegister(uint8_t reg, uint8_t value) {
 	wire.beginTransmission(addr);
-	wire.write(reg << 3);
+	wire.write(reg << 3 | channel);
 	wire.write(value);
 
 	int stat = wire.endTransmission(true);
@@ -240,7 +241,7 @@ bool SC16IS740::writeRegister(uint8_t reg, uint8_t value) {
 
 bool SC16IS740::readInternal(uint8_t *buffer, size_t size) {
 	wire.beginTransmission(addr);
-	wire.write(RHR_THR_REG << 3);
+	wire.write(RHR_THR_REG << 3 | channel);
 	wire.endTransmission(false);
 
 	uint8_t numRcvd = wire.requestFrom(addr, size, (uint8_t)true);
@@ -261,7 +262,7 @@ bool SC16IS740::readInternal(uint8_t *buffer, size_t size) {
 
 bool SC16IS740::writeInternal(const uint8_t *buffer, size_t size) {
 	wire.beginTransmission(addr);
-	wire.write(RHR_THR_REG << 3);
+	wire.write(RHR_THR_REG << 3 | channel);
 	wire.write(buffer, size);
 
 	int stat = wire.endTransmission(true);
@@ -279,8 +280,8 @@ bool SC16IS740::writeInternal(const uint8_t *buffer, size_t size) {
 	return (stat == 0);
 }
 
-SC16IS740SPI::SC16IS740SPI(SPIClass &spi, int cs, int intPin) : spi(spi), cs(cs), intPin(intPin) {
-
+SC16IS740SPI::SC16IS740SPI(SPIClass &spi, int cs, int intPin,int aChannel) : spi(spi), cs(cs), intPin(intPin) {
+channel = (uint8_t) aChannel << 1;
 }
 SC16IS740SPI::~SC16IS740SPI() {
 
@@ -302,7 +303,7 @@ uint8_t SC16IS740SPI::readRegister(uint8_t reg) {
 
 	beginTransaction();
 
-	spi.transfer(0x80 | reg << 3);
+	spi.transfer(0x80 | reg << 3 | channel);
 	uint8_t value = (uint8_t) spi.transfer(0);
 
 	endTransaction();
@@ -319,7 +320,7 @@ bool SC16IS740SPI::writeRegister(uint8_t reg, uint8_t value) {
 
 	beginTransaction();
 
-	spi.transfer(reg << 3);
+	spi.transfer(reg << 3 | channel);
 	spi.transfer(value);
 
 	endTransaction();

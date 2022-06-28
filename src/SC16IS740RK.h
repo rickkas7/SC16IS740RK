@@ -240,6 +240,7 @@ protected:
 	bool hasPeek = false;
 	uint8_t peekByte = 0;
 	bool writeBlocksWhenFull = true;
+	uint8_t channel;
 };
 
 class SC16IS740 : public SC16IS740Base {
@@ -251,8 +252,10 @@ public:
 	 *
 	 * @param addr The address you've set using the A0 and A1 pins, 0-3. This will be converted to the
 	 * appropriate I2C address. Or you can directly specify the actual I2C address 0-127.
-	 */
-	SC16IS740(TwoWire &wire, int addr);
+	 * 
+	 * @param channel The channel (0,1) of a multi serial chip like the SC16IS752.
+	 */	
+	SC16IS740(TwoWire &wire, int addr, int channel = 0);	
 
 	/**
 	 * @brief Destructor. You typically don't delete one of these as it's normally a global variable.
@@ -324,8 +327,10 @@ public:
 	 *
 	 * @param intPin The pin to use for interrupts from the SC16IS740. Not currently used.
 	 * If not using interrupts, omit this parameter or pass -1.
+	 * 
+	 * @param channel The channel (0,1) of a multi-serial chip like the SC16IS752.
 	 */
-	SC16IS740SPI(SPIClass &spi, int cs, int intPin = -1);
+	SC16IS740SPI(SPIClass &spi, int cs, int intPin = -1, int aChannel = 0);
 
 #ifdef SYSTEM_VERSION_v151RC1
 	// In 1.5.0-rc.1, SPI interfaces are handled differently. You can still pass in SPI, SPI1, etc.
@@ -382,6 +387,7 @@ public:
 	 * @param delayus Amount of time in microseconds to delay after changing SPI settings to allow the bus to settle.
 	 */
 	inline SC16IS740SPI &withSharedBus(unsigned long delayus) { sharedBus = true; sharedBusDelay = delayus; return *this;};
+
 
 protected:
 	/**

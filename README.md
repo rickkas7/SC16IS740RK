@@ -2,6 +2,12 @@
 
 *Interface to SC16IS740 UART for Particle devices*
 
+It is recommended that you use 
+[https://github.com/rickkas7/SC16IS7xxRK](https://github.com/rickkas7/SC16IS7xxRK)
+which is an updated version of this library, instead. The new SC16IS7xxRK library supports 
+dual-port chips, hardware flow control, and other options.
+ 
+
 - Project Location: https://github.com/rickkas7/SC16IS740RK
 - License: MIT. You can use this library without fee in open and closed-source projects. 
 
@@ -198,6 +204,10 @@ SC16IS740SPI extSerial(SPI1, D5);
 ```
 
 ## Version History
+
+### 0.0.8 (2023-08-20)
+
+- Recommendation to use SC16IS7xxRK instead.
 
 ### 0.0.7 (2020-05-04)
 

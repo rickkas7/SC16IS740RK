@@ -5,7 +5,9 @@
 
 /**
  * @brief Library for using the SC16IS740 UART on the Particle platform
- *
+ * 
+ * It is recommended that you use https://github.com/rickkas7/SC16IS7xxRK, which is an updated
+ * version of this library, instead. 
  */
 class SC16IS740Base : public Stream {
 public:

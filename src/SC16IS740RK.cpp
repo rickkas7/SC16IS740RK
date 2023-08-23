@@ -101,8 +101,8 @@ size_t SC16IS740Base::write(const uint8_t *buffer, size_t size) {
 
 	while(size > 0 && !done) {
 		size_t count = size;
-		if (count > writeInternalMax()) {
-			count = writeInternalMax();
+		if (count > writeInternalMax()/2) {
+			count = writeInternalMax()/2;
 		}
 
 		if (writeBlocksWhenFull) {
@@ -111,7 +111,6 @@ size_t SC16IS740Base::write(const uint8_t *buffer, size_t size) {
 				if (count <= (size_t) avail) {
 					break;
 				}
-				delay(1);
 			}
 		}
 		else {

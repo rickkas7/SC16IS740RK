@@ -205,6 +205,10 @@ SC16IS740SPI extSerial(SPI1, D5);
 
 ## Version History
 
+### 0.9.8 (2025-02-14)
+
+- The fix in 0.0.3 added in 0.0.3 no longer works because `HAL_PLATFORM_MESH` is no longer defined; fixed again.
+
 ### 0.0.8 (2023-08-20)
 
 - Recommendation to use SC16IS7xxRK instead.

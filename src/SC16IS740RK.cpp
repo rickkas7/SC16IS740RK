@@ -2,7 +2,7 @@
 
 #include "SC16IS740RK.h"
 
-static Logger log("app.ser");
+static Logger _log("app.ser");
 
 // Converts addr (0-3) corresponding to the value set by A0 and A1 to an address
 // Note these values are half that of Table 32 in the data sheet because the data sheet
@@ -202,7 +202,7 @@ uint8_t SC16IS740::readRegister(uint8_t reg) {
 	wire.requestFrom(addr, 1, true);
 	uint8_t value = (uint8_t) wire.read();
 
-	log.trace("readRegister reg=%d value=%d", reg, value);
+	_log.trace("readRegister reg=%d value=%d", reg, value);
 
 	return value;
 }
@@ -223,8 +223,8 @@ bool SC16IS740::writeRegister(uint8_t reg, uint8_t value) {
 	// 4: data byte transfer timeout
 	// 5: data byte transfer succeeded, busy timeout immediately after
 
-	log.trace("writeRegister reg=%d value=%d stat=%d", reg, value, stat);
-	// log.trace("read after write value=%d", readRegister(reg));
+	_log.trace("writeRegister reg=%d value=%d stat=%d", reg, value, stat);
+	// _log.trace("read after write value=%d", readRegister(reg));
 
 	return (stat == 0);
 }
@@ -237,7 +237,7 @@ bool SC16IS740::readInternal(uint8_t *buffer, size_t size) {
 
 	uint8_t numRcvd = wire.requestFrom(addr, size, (uint8_t)true);
 	if (numRcvd < size) {
-		log.info("readInternal failed numRcvd=%u size=%u", numRcvd, size);
+		_log.info("readInternal failed numRcvd=%u size=%u", numRcvd, size);
 		return false;
 	}
 
@@ -245,7 +245,7 @@ bool SC16IS740::readInternal(uint8_t *buffer, size_t size) {
 		buffer[ii] = (uint8_t) wire.read();
 	}
 
-	log.trace("readInternal %d bytes", size);
+	_log.trace("readInternal %d bytes", size);
 
 	return true;
 }
@@ -266,7 +266,7 @@ bool SC16IS740::writeInternal(const uint8_t *buffer, size_t size) {
 	// 4: data byte transfer timeout
 	// 5: data byte transfer succeeded, busy timeout immediately after
 
-	log.trace("writeInternal size=%d stat=%d", size, stat);
+	_log.trace("writeInternal size=%d stat=%d", size, stat);
 
 	return (stat == 0);
 }
@@ -300,7 +300,7 @@ uint8_t SC16IS740SPI::readRegister(uint8_t reg) {
 	endTransaction();
 
 
-	log.trace("readRegister reg=%d value=%d", reg, value);
+	_log.trace("readRegister reg=%d value=%d", reg, value);
 
 	return value;
 }
@@ -316,8 +316,8 @@ bool SC16IS740SPI::writeRegister(uint8_t reg, uint8_t value) {
 
 	endTransaction();
 
-	log.trace("writeRegister reg=%d value=%d", reg, value);
-	// log.trace("read after write value=%d", readRegister(reg));
+	_log.trace("writeRegister reg=%d value=%d", reg, value);
+	// _log.trace("read after write value=%d", readRegister(reg));
 
 	return true;
 }
@@ -327,17 +327,13 @@ bool SC16IS740SPI::readInternal(uint8_t *buffer, size_t size) {
 	beginTransaction();
 
 	spi.transfer(0x80 | RHR_THR_REG << 3);
-#if HAL_PLATFORM_MESH
-	// On mesh platforms, the DMA spi.transfer is causing a SOS fault. Disable for now.
 	for(size_t ii = 0; ii < size; ii++) {
 		buffer[ii] = spi.transfer(0);
 	}
-#else
-	spi.transfer(NULL, buffer, size, NULL);
-#endif
+	// spi.transfer(NULL, buffer, size, NULL);
 	endTransaction();
 
-	log.trace("readInternal %d bytes", size);
+	_log.trace("readInternal %d bytes", size);
 
 	return true;
 }
@@ -346,14 +342,10 @@ bool SC16IS740SPI::writeInternal(const uint8_t *buffer, size_t size) {
 	beginTransaction();
 
 	spi.transfer(RHR_THR_REG << 3);
-#if HAL_PLATFORM_MESH
-	// On mesh platforms, the DMA spi.transfer is causing a SOS fault. Disable for now.
 	for(size_t ii = 0; ii < size; ii++) {
 		spi.transfer(buffer[ii]);
 	}
-#else
-	spi.transfer(const_cast<uint8_t *>(buffer), NULL, size, NULL);
-#endif
+	// spi.transfer(const_cast<uint8_t *>(buffer), NULL, size, NULL);
 
 	endTransaction();
 
